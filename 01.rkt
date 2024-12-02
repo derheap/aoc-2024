@@ -9,7 +9,7 @@
 1   3
 3   9
 3   3" "\n"))
-(define (split-line line) (string-split line "   "))
+(define (split-line line) (string-split line #px"\\s+"))
 (define (split-lines line) (map split-line line))
 (define (first-list pair) (string->number (first pair)))
 (check-equal? (first-list '("1" "2")) 1)
