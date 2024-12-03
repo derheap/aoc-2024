@@ -54,6 +54,7 @@
   (cond
   [(< (first list) 0) (safe-desc? list)]
   [(> (first list) 0) (safe-asc? list)]
+  [ else #f]
   )
 )
 
@@ -64,61 +65,26 @@
   (length (filter (lambda (it) (eq? #t it))
     (map (lambda (line)
       (is-safe? (deltas line)))(split->ints input)) )))
-(trace deltas)
+
 (check-equal? (part#1 test_input) 2)
 (part#1 test_input)
 
-(define (remove-outlier-asc list)
-  (foldl
-   (lambda (it accu) (cons it list)) '()
-   list)
+(define (is-safe-damped? list)
+  {cond
+    [ (is-safe? (deltas list)) #t]
+    [ else  (ormap (lambda (combination)(is-safe? (deltas combination)))
+                   (combinations list (- (length list) 1)))
+    ]
+ }
 )
-
-(define (remove-outlier-desc list)
-  (filter (lambda (it) (and (<= it -1) (>= it -3))) list)
-)
-
-
-(define (delta-is-outlier delta)
-  (let ([ad (abs delta)])
-    (or (< ad 1) (> ad 3)))
-)
-
-(check-equal? (delta-is-outlier 0) #t)
-(check-equal? (delta-is-outlier -8) #t)
-(check-equal? (delta-is-outlier 8) #t)
-(check-equal? (delta-is-outlier 4) #t)
-(check-equal? (delta-is-outlier -1) #f)
-(check-equal? (delta-is-outlier 1) #f)
-
-(define (deltas-damped list)
-
-  (define (iter result list last found-outlier)
-    (let* ([tail (rest list)]
-           [head (first list)]
-           [delta (- head last) ]
-           [last-dir (if (empty? result) (direction delta) (direction (first result)))]
-           [outlier? (or (delta-is-outlier delta) (not (eq? (direction delta) last-dir)))])
-     
-        (cond
-         [(empty? tail) (if (or (not outlier?) found-outlier) (cons delta result) result)]
-         [else (if (or (not outlier?) found-outlier)
-                   (iter (cons delta  result) tail head found-outlier)
-                   (iter (cons (+ delta (if (empty? result) 0 (first result)))  (if (empty? result) '() (rest result))) tail head #t) )
-         ]
-       )
-  
-      )
- )
-  ;(trace iter)
-  (iter '() (rest list) (first list) #f)
-)
-
-
+;(trace is-safe-damped?)
+;(trace deltas)
 (define (part#2 input)
-  (length (filter (lambda (it) (eq? #t it))
+  (length
+   (filter
+    (lambda (it) (eq? #t it))
     (map (lambda (line)
-      (is-safe? (deltas-damped line)))(split->ints input)) )))
+           (is-safe-damped?  line))(split->ints input)) )))
 
 
 (check-equal? (part#2 test_input) 4)
