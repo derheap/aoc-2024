@@ -1,5 +1,6 @@
 #lang racket
 (require rackunit)
+(require racket/trace)
 
 (define input (file->lines "input/02.txt"))
 (define test_input
@@ -31,7 +32,6 @@
 
 (define (deltas list)
   (define (iter result list last)
-
     (cond
     [(empty? (rest list)) (cons (-  (first list)  last) result)]
     [else (iter (cons (- (first list) last)  result) (rest list) (first list))]
@@ -64,12 +64,62 @@
   (length (filter (lambda (it) (eq? #t it))
     (map (lambda (line)
       (is-safe? (deltas line)))(split->ints input)) )))
-
+(trace deltas)
 (check-equal? (part#1 test_input) 2)
-(part#1 input)
+(part#1 test_input)
+
+(define (remove-outlier-asc list)
+  (foldl
+   (lambda (it accu) (cons it list)) '()
+   list)
+)
+
+(define (remove-outlier-desc list)
+  (filter (lambda (it) (and (<= it -1) (>= it -3))) list)
+)
+
+
+(define (delta-is-outlier delta)
+  (let ([ad (abs delta)])
+    (or (< ad 1) (> ad 3)))
+)
+
+(check-equal? (delta-is-outlier 0) #t)
+(check-equal? (delta-is-outlier -8) #t)
+(check-equal? (delta-is-outlier 8) #t)
+(check-equal? (delta-is-outlier 4) #t)
+(check-equal? (delta-is-outlier -1) #f)
+(check-equal? (delta-is-outlier 1) #f)
+
+(define (deltas-damped list)
+
+  (define (iter result list last found-outlier)
+    (let* ([tail (rest list)]
+           [head (first list)]
+           [delta (- head last) ]
+           [last-dir (if (empty? result) (direction delta) (direction (first result)))]
+           [outlier? (or (delta-is-outlier delta) (not (eq? (direction delta) last-dir)))])
+     
+        (cond
+         [(empty? tail) (if (or (not outlier?) found-outlier) (cons delta result) result)]
+         [else (if (or (not outlier?) found-outlier)
+                   (iter (cons delta  result) tail head found-outlier)
+                   (iter (cons (+ delta (if (empty? result) 0 (first result)))  (if (empty? result) '() (rest result))) tail head #t) )
+         ]
+       )
+  
+      )
+ )
+  ;(trace iter)
+  (iter '() (rest list) (first list) #f)
+)
+
 
 (define (part#2 input)
- 'null)
+  (length (filter (lambda (it) (eq? #t it))
+    (map (lambda (line)
+      (is-safe? (deltas-damped line)))(split->ints input)) )))
 
-(check-equal? (part#2 test_input) 31)
-(part#2 test_input)
+
+(check-equal? (part#2 test_input) 4)
+(part#2 input)
