@@ -61,31 +61,33 @@ Prize: X=([0-9]+), Y=([0-9]+)"
   (define a (calc-a-from-b p b))
   (list a b (reaches-prize? p a b)))
 
-(define (iter-b p b)
+(define (iter-b p b max-b)
+  (println (list max-b b))
   (define a (calc-a-from-b p b))
   (cond
     [(reaches-prize? p a b) (+ (* a 3) b)]
-    [(> b 10000000000000) 0]
-    [else (iter-b p (+ b 1))]))
+    [(> b max-b) 0]
+    [else (iter-b p (+ b 1) max-b)]))
 
 (define (part#1 input)
   (define machines
     (map (λ (block) (parse-block block 0))
          (split-blocks input)))
-  (define solutions (map (λ (machine) (iter-b machine 0)) machines))
+  (define solutions (map (λ (machine) (iter-b machine 0 100)) machines))
   (foldl (λ (value sum) (+ value sum)) 0 solutions)
   )
 
 (check-equal? (part#1 test_input) 480)
-(part#1 input)
+(println (part#1 input))
 
+; Way to slow
 (define offset 10000000000000)
 (define (part#2 input)
   (define machines
     (map (λ (block) (parse-block block offset))
          (split-blocks input)))
   (for-each (λ (m) (println (list (prize-x m) (prize-y m)))) machines)
-  (define solutions (map (λ (machine) (iter-b machine (/ offset (prize-x machine)))) machines))
+  (define solutions (map (λ (machine) (iter-b machine 0 (floor (/ (prize-x machine) (prize-bx machine))))) machines))
   (println solutions)
   (foldl (λ (value sum) (+ value sum)) 0 solutions)
   )
