@@ -2,7 +2,8 @@
 (require rackunit)
 (require racket/trace)
 
-(define input (file->string "input/11.txt"))
+
+(define input (file->string "input/13.txt"))
 (define test_input
   "Button A: X+94, Y+34
 Button B: X+22, Y+67
@@ -25,7 +26,7 @@ Prize: X=18641, Y=10279")
 
 (struct prize (ax ay bx by x y))
 
-(define (parse-block str)
+(define (parse-block str delta)
   (define parts
     (regexp-match
      #rx"Button A: X([+-][0-9]+), Y([+-][0-9]+)
@@ -36,37 +37,59 @@ Prize: X=([0-9]+), Y=([0-9]+)"
          (string->number (third parts))
          (string->number (fourth parts))
          (string->number (fifth parts))
-         (string->number (sixth parts))
-         (string->number (seventh parts))))
+         (+ (string->number (sixth parts)) delta)
+         (+ (string->number (seventh parts))delta)))
+
+
+(define (calc-x p a b)
+  (+ (* a (prize-ax p)) (* b (prize-bx p))))
+(define (calc-y p a b)
+  (+ (* a (prize-ay p)) (* b (prize-by p))))
+(check-equal? (calc-x (prize 94 34 22 67 8400 5400) 80 40)
+              8400)
+(check-equal? (calc-y (prize 94 34 22 67 8400 5400) 80 40)
+              5400)
 
 (define (reaches-prize? p a b)
-  (and (= (prize-x p)
-           (+ (* a (prize-ax p) (* b (prize-bx p)))))
-       (= (prize-y p)
-           (+ (* a (prize-ay p) (* b (prize-by p)))))))
+  (and (= (prize-x p) (calc-x p a b))
+       (= (prize-y p) (calc-y p a b))))
 
 (define (calc-a-from-b p b)
-  (/ (- (prize-x p) (* b (prize-bx p)))
-     (prize-ax p)
-     ))
+  (/ (- (prize-x p) (* b (prize-bx p))) (prize-ax p)))
 
 (define (calc-for-b p b)
   (define a (calc-a-from-b p b))
-(list a b (reaches-prize? p a b))
-  )
+  (list a b (reaches-prize? p a b)))
+
+(define (iter-b p b)
+  (define a (calc-a-from-b p b))
+  (cond
+    [(reaches-prize? p a b) (+ (* a 3) b)]
+    [(> b 10000000000000) 0]
+    [else (iter-b p (+ b 1))]))
 
 (define (part#1 input)
-  (define machines 
-  (map (λ (block) (parse-block block))
-       (split-blocks input)))
-   (calc-for-b (first machines) 40))
+  (define machines
+    (map (λ (block) (parse-block block 0))
+         (split-blocks input)))
+  (define solutions (map (λ (machine) (iter-b machine 0)) machines))
+  (foldl (λ (value sum) (+ value sum)) 0 solutions)
+  )
 
-;(check-equal? (part#1 test_input) 480)
-(part#1 test_input)
+(check-equal? (part#1 test_input) 480)
+(part#1 input)
 
+(define offset 10000000000000)
 (define (part#2 input)
-  null)
+  (define machines
+    (map (λ (block) (parse-block block offset))
+         (split-blocks input)))
+  (for-each (λ (m) (println (list (prize-x m) (prize-y m)))) machines)
+  (define solutions (map (λ (machine) (iter-b machine (/ offset (prize-x machine)))) machines))
+  (println solutions)
+  (foldl (λ (value sum) (+ value sum)) 0 solutions)
+  )
 
 
 ;(check-equal? (part#2 test_input) 31)
-;(part#2 input)
+(part#2 test_input)
