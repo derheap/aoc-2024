@@ -50,6 +50,12 @@ Prize: X=([0-9]+), Y=([0-9]+)"
 (check-equal? (calc-y (prize 94 34 22 67 8400 5400) 80 40)
               5400)
 
+(define (slopes p)
+  (let ([ps (/(prize-y p)  (prize-x p))]
+        [as (/(prize-ay p)  (prize-ax p))]
+        [bs (/(prize-by p)  (prize-bx p))])
+    (println (list ps as bs))))
+
 (define (reaches-prize? p a b)
   (and (= (prize-x p) (calc-x p a b))
        (= (prize-y p) (calc-y p a b))))
@@ -62,12 +68,21 @@ Prize: X=([0-9]+), Y=([0-9]+)"
   (list a b (reaches-prize? p a b)))
 
 (define (iter-b p b max-b)
-  (println (list max-b b))
+  ;(println (list max-b b))
   (define a (calc-a-from-b p b))
   (cond
-    [(reaches-prize? p a b) (+ (* a 3) b)]
+    [(reaches-prize? p a b) (println (list a b))(+ (* a 3) b)]
     [(> b max-b) 0]
     [else (iter-b p (+ b 1) max-b)]))
+
+(define (iter-b-reverse p b max-b)
+  ;(println (list max-b b))
+  (define a (calc-a-from-b p b))
+  (cond
+    [(reaches-prize? p a b) (println (list a b))(+ (* a 3) b)]
+    [(< b (/ max-b 2)) 0]
+    [else (iter-b-reverse p (- b 1) max-b)]))
+
 
 (define (part#1 input)
   (define machines
@@ -87,9 +102,13 @@ Prize: X=([0-9]+), Y=([0-9]+)"
     (map (λ (block) (parse-block block offset))
          (split-blocks input)))
   (for-each (λ (m) (println (list (prize-x m) (prize-y m)))) machines)
-  (define solutions (map (λ (machine) (iter-b machine 0 (floor (/ (prize-x machine) (prize-bx machine))))) machines))
-  (println solutions)
-  (foldl (λ (value sum) (+ value sum)) 0 solutions)
+  (define m (first machines))
+  (define bmax (floor(/ (prize-x m) (prize-bx m))))
+  (println (list (prize-x m) (prize-bx m) bmax (* bmax (prize-bx m)) (* bmax (prize-by m)) ))
+  (println (slopes m))
+  ;(define solutions (map (λ (machine) (iter-b machine 0 (floor (/ (prize-x machine) (prize-bx machine))))) machines))
+  ;(println solutions)
+  ;(foldl (λ (value sum) (+ value sum)) 0 solutions)
   )
 
 
