@@ -16,6 +16,8 @@ let robots = [];
 let part = 2;
 let smallestAt = 0;
 let smallest = sizeX * sizeY + 1;
+let quads;
+let rPerQuad;
 
 export function preload() {
   input = loadStrings("./14.txt");
@@ -51,14 +53,34 @@ export function setup() {
     ui.start = true;
     e.preventDefault();
   });
-  frameRate(1000);
+  //frameRate(30);
+  quads = calcQuads(5);
+  console.log(quads);
+  rPerQuad = robots.length / (5 * 5);
+  console.log(rPerQuad);
 }
 
 const moveARobot = (r) => {
   r.x += r.vx;
   r.y += r.vy;
-  r.x = r.x >= 0 ? r.x % sizeX : (r.x + sizeX) % sizeX;
-  r.y = r.y >= 0 ? r.y % sizeY : (r.y + sizeY) % sizeY;
+  //r.x = r.x >= 0 ? r.x % sizeX : (r.x + sizeX) % sizeX;
+  //r.y = r.y >= 0 ? r.y % sizeY : (r.y + sizeY) % sizeY;
+  if (r.x < 0) {
+    r.x += sizeX;
+  }
+  if (r.x >= sizeX) {
+    r.x -= sizeX;
+  }
+  if (r.y < 0) {
+    r.y += sizeY;
+  }
+  if (r.y >= sizeY) {
+    r.y -= sizeY;
+  }
+  if (r.x < 0 || r.y < 0 || r.x >= sizeX || r.y >= sizeY) {
+    console.log(gen, r);
+  }
+  //if (r.x == 0 && r.y == 0) console.log(gen, r);
 };
 
 const drawRobots = () => {
@@ -79,7 +101,7 @@ const drawRobots = () => {
 
 const run = (frames) => {
   while (frames--) {
-    if (gen % 10000 == 0) {
+    if (gen % 1 == 0) {
       drawRobots();
     }
     const resultP1 = saftyFactor(robots);
@@ -87,11 +109,13 @@ const run = (frames) => {
       ui.output.innerText = "p1: " + resultP1;
       drawRobots();
     }
+    const d = density(robots, quads, 2);
+    //console.log(d.length);
     const area = calcArea(robots);
-    if (area < smallest) {
+    if (area < smallest || d.length > 0) {
       smallest = area;
       smallestAt = gen;
-      console.log(smallest, "@", smallestAt);
+      //console.log(smallest, "@", smallestAt);
       drawRobots();
       saveCanvas("robots-" + gen, "png");
     }
@@ -104,7 +128,7 @@ export function draw() {
   if (ui.redraw || ui.start) {
     ui.redraw = false;
     ui.gen.innerText = gen;
-    run(100000);
+    run(1);
   }
 }
 
@@ -142,6 +166,30 @@ const saftyFactor = (robots) => {
   );
   return count.reduce((acc, value) => acc * value.length, 1);
 };
+
+const calcQuads = (parts) => {
+  const dx = Math.floor(sizeX / parts);
+  const dy = Math.floor(sizeY / parts);
+  let quads = [];
+  for (let x = 0; x < parts; x++) {
+    for (let y = 0; y < parts; y++) {
+      quads.push({
+        xmin: x * dx,
+        ymin: y * dy,
+        xmax: (x + 1) * dx,
+        ymax: (y + 1) * dy,
+      });
+    }
+  }
+  return quads;
+};
+
+const density = (robots, quads, limit) =>
+  quads.map((q) =>
+    robots.filter(
+      (r) => r.x >= q.xmin && r.x <= q.xmax && r.y >= q.ymin && r.y <= q.ymax,
+    ).length
+  ).filter((c) => c < limit);
 
 const calcArea = (robots) => {
   let xmin = sizeX;
