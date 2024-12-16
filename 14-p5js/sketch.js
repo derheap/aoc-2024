@@ -5,24 +5,20 @@ const tap = (data) => {
   return data;
 };
 
-const sizeX = 11;
-const sizeY = 7;
+const sizeX = 101;
+const sizeY = 103;
 let dX;
 let dY;
-let output;
-let world;
-let lumber;
-let tree;
 let open;
 let input;
 let gen = 0;
-let worlds = [];
-let found = false;
-let goal = 1000000000;
 let robots = [];
+let part = 2;
+let smallestAt = 0;
+let smallest = sizeX * sizeY + 1;
 
 export function preload() {
-  input = loadStrings("./14-test.txt");
+  input = loadStrings("./14.txt");
 }
 
 const parse = (text) =>
@@ -37,14 +33,12 @@ const parse = (text) =>
 export function setup() {
   robots = parse(input.join("\n").trim());
   console.log(robots);
-  createCanvas(800, 800);
+  createCanvas(600, 600);
   dX = width / sizeX;
   dY = height / sizeY;
 
   colorMode(HSL);
   open = color(51, 80, 50);
-  lumber = color(33, 100, 25);
-  tree = color(116, 80, 25);
   ui.output = document.querySelector("#log");
   ui.gen = document.querySelector("#gen");
   ui.form.redraw = document.querySelector("#ui-redraw");
@@ -57,36 +51,60 @@ export function setup() {
     ui.start = true;
     e.preventDefault();
   });
+  frameRate(1000);
 }
 
 const moveARobot = (r) => {
-  //console.log("0", r);
   r.x += r.vx;
   r.y += r.vy;
-  //console.log("1", r);
   r.x = r.x >= 0 ? r.x % sizeX : (r.x + sizeX) % sizeX;
   r.y = r.y >= 0 ? r.y % sizeY : (r.y + sizeY) % sizeY;
-  //console.log("2", r);
+};
+
+const drawRobots = () => {
+  background(open);
+  stroke(64);
+  for (let x = 0; x < sizeX; x++) {
+    for (let y = 0; y < sizeY; y++) {
+      fill(open);
+      rect(x * dX, y * dY, dX, dY);
+    }
+  }
+
+  robots.forEach((it) => {
+    fill(color(180 + it.vx * 10, 66 + it.vy * 5, 40));
+    rect(it.x * dX, it.y * dY, dX, dY);
+  });
+};
+
+const run = (frames) => {
+  while (frames--) {
+    if (gen % 10000 == 0) {
+      drawRobots();
+    }
+    const resultP1 = saftyFactor(robots);
+    if (gen == 100) {
+      ui.output.innerText = "p1: " + resultP1;
+      drawRobots();
+    }
+    const area = calcArea(robots);
+    if (area < smallest) {
+      smallest = area;
+      smallestAt = gen;
+      console.log(smallest, "@", smallestAt);
+      drawRobots();
+      saveCanvas("robots-" + gen, "png");
+    }
+    robots.map(moveARobot);
+    gen += 1;
+  }
 };
 
 export function draw() {
   if (ui.redraw || ui.start) {
     ui.redraw = false;
-    background(open);
-    stroke(64);
     ui.gen.innerText = gen;
-    for (let x = 0; x < sizeX; x++) {
-      for (let y = 0; y < sizeY; y++) {
-        fill(open);
-        rect(x * dX, y * dY, dX, dY);
-      }
-    }
-    robots.forEach((it) => {
-      fill(color(180 + it.vx * 10, 66 + it.vy * 5, 40));
-      rect(it.x * dX, it.y * dY, dX, dY);
-    });
-    robots.map(moveARobot);
-    gen += 1;
+    run(100000);
   }
 }
 
@@ -94,3 +112,47 @@ export function keyTyped() {
   console.log(key);
   if (key == "r") ui.redraw = true;
 }
+
+const saftyFactor = (robots) => {
+  const quadrants = [{
+    xmin: 0,
+    ymin: 0,
+    xmax: Math.floor(sizeX / 2) - 1,
+    ymax: Math.floor(sizeY / 2) - 1,
+  }, {
+    xmin: Math.floor(sizeX / 2) + 1,
+    ymin: 0,
+    xmax: sizeX - 1,
+    ymax: Math.floor(sizeY / 2) - 1,
+  }, {
+    xmin: 0,
+    ymin: Math.floor(sizeY / 2) + 1,
+    xmax: Math.floor(sizeX / 2) - 1,
+    ymax: sizeY - 1,
+  }, {
+    xmin: Math.floor(sizeX / 2) + 1,
+    ymin: Math.floor(sizeY / 2) + 1,
+    xmax: sizeX - 1,
+    ymax: sizeY - 1,
+  }];
+  const count = quadrants.map((q) =>
+    robots.filter(
+      (r) => r.x >= q.xmin && r.x <= q.xmax && r.y >= q.ymin && r.y <= q.ymax,
+    )
+  );
+  return count.reduce((acc, value) => acc * value.length, 1);
+};
+
+const calcArea = (robots) => {
+  let xmin = sizeX;
+  let xmax = -1;
+  let ymin = sizeY;
+  let ymax = -1;
+  robots.forEach((r) => {
+    if (r.x < xmin) xmin = r.x;
+    if (r.x > xmax) xmax = r.x;
+    if (r.y < ymin) ymin = r.y;
+    if (r.y > ymax) ymax = r.y;
+  });
+  return (xmax - xmin + 1) * (ymax - ymin + 1);
+};
