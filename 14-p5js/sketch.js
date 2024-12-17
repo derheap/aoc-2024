@@ -61,21 +61,21 @@ export function setup() {
 }
 
 const moveARobot = (r) => {
-  r.x += r.vx;
-  r.y += r.vy;
+  r.x = r.x + r.vx;
+  r.y = r.y + r.vy;
   //r.x = r.x >= 0 ? r.x % sizeX : (r.x + sizeX) % sizeX;
   //r.y = r.y >= 0 ? r.y % sizeY : (r.y + sizeY) % sizeY;
   if (r.x < 0) {
     r.x += sizeX;
   }
   if (r.x >= sizeX) {
-    r.x -= sizeX;
+    r.x = r.x - sizeX;
   }
   if (r.y < 0) {
     r.y += sizeY;
   }
   if (r.y >= sizeY) {
-    r.y -= sizeY;
+    r.y = r.y - sizeY;
   }
   if (r.x < 0 || r.y < 0 || r.x >= sizeX || r.y >= sizeY) {
     console.log(gen, r);
@@ -101,18 +101,21 @@ const drawRobots = () => {
 
 const run = (frames) => {
   while (frames--) {
-    if (gen % 1 == 0) {
+    if (gen % 100 == 0) {
       drawRobots();
     }
     const resultP1 = saftyFactor(robots);
     if (gen == 100) {
       ui.output.innerText = "p1: " + resultP1;
+      if (resultP1 != 226548000) {
+        noLoop();
+      }
       drawRobots();
     }
-    const d = density(robots, quads, 2);
+    const d = density(robots, quads, 1);
     //console.log(d.length);
     const area = calcArea(robots);
-    if (area < smallest || d.length > 0) {
+    if (area < smallest || d.length) {
       smallest = area;
       smallestAt = gen;
       //console.log(smallest, "@", smallestAt);
@@ -128,7 +131,7 @@ export function draw() {
   if (ui.redraw || ui.start) {
     ui.redraw = false;
     ui.gen.innerText = gen;
-    run(1);
+    run(1000);
   }
 }
 
