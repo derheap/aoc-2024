@@ -9,3 +9,4 @@ erl_crash.dump
 /config/*.secret.exs
 .elixir_ls/
 input/*.txt
+14-p5js/14-eniatx.txt
