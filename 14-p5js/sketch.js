@@ -94,7 +94,17 @@ const drawRobots = () => {
   }
 
   robots.forEach((it) => {
-    fill(color(180 + it.vx * 10, 66 + it.vy * 5, 40));
+    if (it.vx < 0 || it.vy < 0) {
+      fill(
+        color((Math.abs(it.vx) + Math.abs(it.vy)) * 0.2, 66 + it.vy * 5, 40),
+      );
+    } else {
+      color(
+        180 + (Math.abs(it.vx) + Math.abs(it.vy)) * 0.2,
+        66 + it.vy * 5,
+        40,
+      );
+    }
     rect(it.x * dX, it.y * dY, dX, dY);
   });
 };
@@ -107,21 +117,17 @@ const run = (frames) => {
     const resultP1 = saftyFactor(robots);
     if (gen == 100) {
       ui.output.innerText = "p1: " + resultP1;
-      if (resultP1 != 226548000) {
-        noLoop();
-      }
       drawRobots();
     }
-    const d = density(robots, quads, 1);
-    //console.log(d.length);
-    const area = calcArea(robots);
-    if (area < smallest || d.length) {
-      smallest = area;
-      smallestAt = gen;
-      //console.log(smallest, "@", smallestAt);
+    if (gen == 10000) {
+      noLoop();
+    }
+
+    if (noOverlap(robots)) {
       drawRobots();
       saveCanvas("robots-" + gen, "png");
     }
+
     robots.map(moveARobot);
     gen += 1;
   }
@@ -131,9 +137,21 @@ export function draw() {
   if (ui.redraw || ui.start) {
     ui.redraw = false;
     ui.gen.innerText = gen;
-    run(1000);
+    run(100);
   }
 }
+
+const noOverlap = (robots) => {
+  let m = new Map();
+  for (let i = 0; i < robots.length; i++) {
+    const key = robots[i].x + "," + robots[i].y;
+    if (m.has(key)) {
+      return false;
+    }
+    m.set(key);
+  }
+  return true;
+};
 
 export function keyTyped() {
   console.log(key);
@@ -193,17 +211,3 @@ const density = (robots, quads, limit) =>
       (r) => r.x >= q.xmin && r.x <= q.xmax && r.y >= q.ymin && r.y <= q.ymax,
     ).length
   ).filter((c) => c < limit);
-
-const calcArea = (robots) => {
-  let xmin = sizeX;
-  let xmax = -1;
-  let ymin = sizeY;
-  let ymax = -1;
-  robots.forEach((r) => {
-    if (r.x < xmin) xmin = r.x;
-    if (r.x > xmax) xmax = r.x;
-    if (r.y < ymin) ymin = r.y;
-    if (r.y > ymax) ymax = r.y;
-  });
-  return (xmax - xmin + 1) * (ymax - ymin + 1);
-};
